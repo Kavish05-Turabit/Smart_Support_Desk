@@ -5,6 +5,7 @@ from typing import Annotated, List
 from app.core.session import get_db
 from app.models.employeeModel import Employee
 from app.models.validators import EmployeeCreate,EmployeeResponse,EmployeeUpdate
+from app.core.security import get_password_hash
 
 router = APIRouter()
 
@@ -25,6 +26,7 @@ def get_employee(employee_id, db: Annotated[Session, Depends(get_db)]):
 def create_employee(employee_in: EmployeeCreate,db: Annotated[Session,Depends(get_db)]):
 
     new_employee = Employee(**employee_in.model_dump())
+    setattr(new_employee,"password_hash",get_password_hash(getattr(new_employee,"password_hash")))
     db.add(new_employee)
     db.commit()
 

@@ -3,7 +3,9 @@ from sqlalchemy.orm import Session
 from typing import Annotated, List
 
 from app.core.session import get_db
+from app.core.auth import get_current_user
 from app.models.customerModel import Customer
+from app.models.employeeModel import Employee
 from app.models.validators import CustomerCreate,CustomerResponse,CustomerUpdate
 
 router = APIRouter()
@@ -22,10 +24,10 @@ def get_customer(customer_id, db: Annotated[Session, Depends(get_db)]):
     return customer
 
 @router.post("/",response_model=CustomerResponse)
-def create_customer(customer_in: CustomerCreate,db: Annotated[Session,Depends(get_db)]):
+def create_customer(customer_in: CustomerCreate,db: Annotated[Session,Depends(get_db)],user: Employee = Depends(get_current_user)):
 
     new_customer = Customer(**customer_in.model_dump())
-    setattr(new_customer,"created_by",1)
+    setattr(new_customer,"created_by",user.employee_id)
     db.add(new_customer)
     db.commit()
 

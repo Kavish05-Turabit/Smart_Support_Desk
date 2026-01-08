@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api import tickets,dashboard,customers,employees
+from app.api import tickets,dashboard,customers,employees,login
 from app.core.config import settings
 from app.core.session import engine,Base
 from contextlib import asynccontextmanager
@@ -16,6 +16,7 @@ async def lifespan():
 app = FastAPI(title="Smart Support Desk")
 
 app.include_router(dashboard.router,prefix="/dashboard",tags=["Dashboard"])
+app.include_router(login.router,prefix="/login",tags=["Login"])
 app.include_router(tickets.router,prefix="/tickets",tags=["Tickets"])
 app.include_router(customers.router,prefix="/customers",tags=["Customers"])
 app.include_router(employees.router,prefix="/employees",tags=["Employees"])
