@@ -41,7 +41,12 @@ async def get_current_user(db: DBdependency,token: Annotated[str, Depends(oauth2
         email = payload.get("sub")
         if email is None:
             raise credentials_exception
-    except jwt.InvalidTokenError:
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Jwt token has expired. Please Login again."
+        )
+    except jwt.PyJWTError as e:
         raise credentials_exception
     user = db.query(Employee).filter(Employee.email == email).first()
     if user is None:
@@ -61,7 +66,7 @@ class RoleDependency:
             return user
         else:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=status.HTTP_403_FORBIDDEN,
                 detail="User does not have enough authority!",
                 headers={"WWW-Authenticate": "Bearer"},
             )

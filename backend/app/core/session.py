@@ -6,7 +6,12 @@ from app.core.config import settings
 from fastapi import Depends
 from typing import Annotated
 
-engine = create_engine(url=settings.DATABASE_URL)
+engine = create_engine(
+    url=settings.DATABASE_URL,
+    pool_pre_ping=True,
+    pool_size=10,
+    max_overflow=10
+)
 
 Sessionlocal = sessionmaker(autoflush=False,bind=engine)
 

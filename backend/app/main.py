@@ -11,7 +11,7 @@ Base.metadata.create_all(bind=engine)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     sess.redisDb = aioredis.from_url(
-        "redis://localhost:32769",
+        "redis://localhost:32768",
         decode_responses = True
     )
     yield

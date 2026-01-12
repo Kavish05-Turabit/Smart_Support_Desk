@@ -14,7 +14,6 @@ def login_for_access_token(
 ):
 
     user = authenticate_user(db, email=form_data.username, password=form_data.password)
-    print(user)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, 
