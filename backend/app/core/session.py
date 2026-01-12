@@ -36,5 +36,20 @@ def get_redis():
         return False
     return redisDb
 
+RedisDependency = Annotated[Redis,Depends(get_redis)]
 
-RedisDependency = Annotated[Redis, Depends(get_redis)]
+class MockRedis:
+    async def get(self, key):
+        return None
+
+    async def set(self, key, value, ex=None):
+        pass 
+
+    async def delete(self, key):
+        pass
+
+    async def close(self):
+        pass
+
+    async def append(self,a,b):
+        pass
