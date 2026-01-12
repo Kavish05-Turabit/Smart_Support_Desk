@@ -20,10 +20,12 @@ class Ticket(Base):
     
     customer_id = Column(Integer, ForeignKey("customers.customer_id"), nullable=False)
     assignee_id = Column(Integer, ForeignKey("employees.employee_id"))
+    created_by_id = Column(Integer, ForeignKey("employees.employee_id"), nullable=False)
     
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     resolved_at = Column(DateTime)
 
     # Relationships
     customer = relationship("Customer", back_populates="tickets")
-    assignee = relationship("Employee", back_populates="tickets_assigned")
+    assignee = relationship("Employee", back_populates="tickets_assigned",foreign_keys=[assignee_id])
+    creator = relationship("Employee", back_populates="tickets_created",foreign_keys=[created_by_id])

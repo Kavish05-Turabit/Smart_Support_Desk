@@ -1,18 +1,19 @@
 import json
-from fastapi import APIRouter, HTTPException,status
+from fastapi import APIRouter, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from typing import List
 
-from app.core.session import DBdependency,RedisDependency
-from app.core.auth import EditorDependency,AdminDependency
+from app.core.session import DBdependency, RedisDependency
+from app.core.auth import AgentDependency, AdminDependency
 from app.models.customerModel import Customer
-from app.models.validators import CustomerCreate,CustomerResponse,CustomerUpdate
+from app.models.validators import CustomerCreate, CustomerResponse, CustomerUpdate
 
 router = APIRouter()
 
-@router.get("/",response_model=List[CustomerResponse])
-async def get_all_customers(db: DBdependency,user: EditorDependency,redis_client: RedisDependency):
-    try:    
+
+@router.get("/", response_model=List[CustomerResponse])
+async def get_all_customers(db: DBdependency, user: AgentDependency, redis_client: RedisDependency):
+    try:
         cache_key = "customers:all"
         cached_data = await redis_client.get(cache_key)
         if cached_data:
@@ -20,15 +21,15 @@ async def get_all_customers(db: DBdependency,user: EditorDependency,redis_client
 
         customers = db.query(Customer).all()
         data = jsonable_encoder(customers)
-        await redis_client.append(cache_key,json.dumps(data))
+        await redis_client.append(cache_key, json.dumps(data))
         return customers
     except Exception as e:
-        print("Cache Error :- ",e)
+        print("Cache Error :- ", e)
         return db.query(Customer).all()
 
-@router.get("/{customer_id}",response_model=CustomerResponse)
-def get_customer(customer_id, db: DBdependency,user: EditorDependency):
 
+@router.get("/{customer_id}", response_model=CustomerResponse)
+def get_customer(customer_id, db: DBdependency, user: AgentDependency):
     customer = db.query(Customer).filter(Customer.customer_id == customer_id).first()
     if not customer:
         raise HTTPException(
@@ -37,11 +38,13 @@ def get_customer(customer_id, db: DBdependency,user: EditorDependency):
         )
     return customer
 
-@router.post("/",response_model=CustomerResponse)
-async def create_customer(customer_in: CustomerCreate,db: DBdependency,user: EditorDependency,redis_client: RedisDependency):
+
+@router.post("/", response_model=CustomerResponse)
+async def create_customer(customer_in: CustomerCreate, db: DBdependency, user: AgentDependency,
+                          redis_client: RedisDependency):
     try:
         new_customer = Customer(**customer_in.model_dump())
-        setattr(new_customer,"created_by",user.employee_id)
+        setattr(new_customer, "created_by", user.employee_id)
         db.add(new_customer)
         db.commit()
         await redis_client.delete("customers:all")
@@ -55,9 +58,10 @@ async def create_customer(customer_in: CustomerCreate,db: DBdependency,user: Edi
             detail="Database Error! Customer Creation failed."
         )
 
-@router.put("/{customer_id}",response_model=CustomerResponse)
-async def update_customer(customer_id:int, customer_in: CustomerUpdate, db: DBdependency,user: EditorDependency,redis_client: RedisDependency):
-    
+
+@router.put("/{customer_id}", response_model=CustomerResponse)
+async def update_customer(customer_id: int, customer_in: CustomerUpdate, db: DBdependency, user: AgentDependency,
+                          redis_client: RedisDependency):
     customer = db.query(Customer).filter(Customer.customer_id == customer_id).first()
     if not customer:
         raise HTTPException(
@@ -65,8 +69,8 @@ async def update_customer(customer_id:int, customer_in: CustomerUpdate, db: DBde
             detail=f"Customer with ID: {customer_id} not found"
         )
     data = customer_in.model_dump(exclude_unset=True)
-    for key,value in data.items():
-        setattr(customer,key,value)
+    for key, value in data.items():
+        setattr(customer, key, value)
 
     try:
         db.add(customer)
@@ -82,9 +86,9 @@ async def update_customer(customer_id:int, customer_in: CustomerUpdate, db: DBde
             detail="Database Error! Customer cannot be updated right now."
         )
 
-@router.delete("/{customer_id}",response_model=CustomerResponse)
-async def delete_customer(customer_id, db: DBdependency,user: AdminDependency,redis_client: RedisDependency):
 
+@router.delete("/{customer_id}")
+async def delete_customer(customer_id, db: DBdependency, user: AdminDependency, redis_client: RedisDependency):
     customer = db.query(Customer).filter(Customer.customer_id == customer_id).first()
     if not customer:
         raise HTTPException(
@@ -95,7 +99,7 @@ async def delete_customer(customer_id, db: DBdependency,user: AdminDependency,re
         db.delete(customer)
         db.commit()
         await redis_client.delete("customers:all")
-        return {"message" : "Customer deleted successfully"}
+        return {"message": "Customer deleted successfully"}
     except Exception as e:
         db.rollback()
         raise HTTPException(
