@@ -12,25 +12,28 @@ from app.models.employeeModel import Employee
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-def authenticate_user(db: DBdependency,email: str,password: str):
+
+def authenticate_user(db: DBdependency, email: str, password: str):
     user = db.query(Employee).filter(Employee.email == email).first()
     if not user:
         return False
-    if not verify_password(password,user.password_hash):
+    if not verify_password(password, user.password_hash):
         return False
     return user
 
-def create_access_token(data: dict,expires: timedelta | None = None):
+
+def create_access_token(data: dict, expires: timedelta | None = None):
     to_encode = data.copy()
     if expires:
         expire = datetime.now() + expires
     else:
         expire = datetime.now() + timedelta(minutes=30)
-    to_encode.update({"exp":expire})
-    encoded_jwt = jwt.encode(to_encode,settings.JWT_SHA256_HASH,settings.JWT_ALGORITHM)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, settings.JWT_SHA256_HASH, settings.JWT_ALGORITHM)
     return encoded_jwt
 
-async def get_current_user(db: DBdependency,token: Annotated[str, Depends(oauth2_scheme)]):
+
+async def get_current_user(db: DBdependency, token: Annotated[str, Depends(oauth2_scheme)]):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -53,16 +56,15 @@ async def get_current_user(db: DBdependency,token: Annotated[str, Depends(oauth2
         raise credentials_exception
     return user
 
+
 class RoleDependency:
-    def __init__(self,required_level):
+    def __init__(self, required_level):
         self.required_level = required_level
 
-    def __call__(self, user: Annotated[Employee,Depends(get_current_user)]):
+    def __call__(self, user: Annotated[Employee, Depends(get_current_user)]):
         if self.required_level == user.access_level:
             return user
         elif user.access_level == "admin":
-            return user
-        elif user.access_level == "editor" and self.required_level == "viewer":
             return user
         else:
             raise HTTPException(
@@ -70,7 +72,7 @@ class RoleDependency:
                 detail="User does not have enough authority!",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
-AdminDependency = Annotated[Employee,Depends(RoleDependency("admin"))]
-EditorDependency = Annotated[Employee,Depends(RoleDependency("editor"))]
-ViewerDependency = Annotated[Employee,Depends(RoleDependency("viewer"))]
+
+
+AdminDependency = Annotated[Employee, Depends(RoleDependency("admin"))]
+AgentDependency = Annotated[Employee, Depends(RoleDependency("agent"))]

@@ -3,33 +3,34 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from typing import List
 
-from app.core.session import DBdependency,RedisDependency
+from app.core.session import DBdependency, RedisDependency
 from app.models.employeeModel import Employee
-from app.models.validators import EmployeeCreate,EmployeeResponse,EmployeeUpdate
+from app.models.validators import EmployeeCreate, EmployeeResponse, EmployeeUpdate
 from app.core.security import get_password_hash
 from app.core.auth import AdminDependency
 
 router = APIRouter()
 
-@router.get("/",response_model=List[EmployeeResponse])
-async def get_all_employees(db: DBdependency,user: AdminDependency,redis_client: RedisDependency):
+
+@router.get("/", response_model=List[EmployeeResponse])
+async def get_all_employees(db: DBdependency, user: AdminDependency, redis_client: RedisDependency):
     try:
         cache_key = "employees:all"
         cached_data = await redis_client.get(cache_key)
         if cached_data:
             return json.loads(cached_data)
-        
+
         employees = db.query(Employee).all()
         data = jsonable_encoder(employees)
-        await redis_client.append(cache_key,json.dumps(data))
+        await redis_client.append(cache_key, json.dumps(data))
         return employees
     except Exception as e:
-        print("Cache Error :- ",e)
+        print("Cache Error :- ", e)
         return db.query(Employee).all()
 
-@router.get("/{employee_id}",response_model=EmployeeResponse)
-def get_employee(employee_id, db: DBdependency,user: AdminDependency):
 
+@router.get("/{employee_id}", response_model=EmployeeResponse)
+def get_employee(employee_id, db: DBdependency, user: AdminDependency):
     employee = db.query(Employee).filter(Employee.employee_id == employee_id).first()
     if not employee:
         raise HTTPException(
@@ -38,11 +39,13 @@ def get_employee(employee_id, db: DBdependency,user: AdminDependency):
         )
     return employee
 
-@router.post("/",response_model=EmployeeResponse)
-async def create_employee(employee_in: EmployeeCreate,db: DBdependency,user: AdminDependency,redis_client: RedisDependency):
+
+@router.post("/", response_model=EmployeeResponse)
+async def create_employee(employee_in: EmployeeCreate, db: DBdependency, user: AdminDependency,
+                          redis_client: RedisDependency):
     try:
         new_employee = Employee(**employee_in.model_dump())
-        setattr(new_employee,"password_hash",get_password_hash(getattr(new_employee,"password_hash")))
+        setattr(new_employee, "password_hash", get_password_hash(getattr(new_employee, "password_hash")))
         db.add(new_employee)
         db.commit()
         await redis_client.delete("employees:all")
@@ -56,9 +59,10 @@ async def create_employee(employee_in: EmployeeCreate,db: DBdependency,user: Adm
             detail="Database Error! Employee Creation failed."
         )
 
-@router.put("/{employee_id}",response_model=EmployeeResponse)
-async def update_employee(employee_id:int, employee_in: EmployeeUpdate, db: DBdependency,user: AdminDependency,redis_client: RedisDependency):
-    
+
+@router.put("/{employee_id}", response_model=EmployeeResponse)
+async def update_employee(employee_id: int, employee_in: EmployeeUpdate, db: DBdependency, user: AdminDependency,
+                          redis_client: RedisDependency):
     employee = db.query(Employee).filter(Employee.employee_id == employee_id).first()
     if not employee:
         raise HTTPException(
@@ -66,8 +70,8 @@ async def update_employee(employee_id:int, employee_in: EmployeeUpdate, db: DBde
             detail=f"Employee with ID: {employee_id} not found"
         )
     data = employee_in.model_dump(exclude_unset=True)
-    for key,value in data.items():
-        setattr(employee,key,value)
+    for key, value in data.items():
+        setattr(employee, key, value)
 
     try:
         db.add(employee)
@@ -83,9 +87,9 @@ async def update_employee(employee_id:int, employee_in: EmployeeUpdate, db: DBde
             detail="Database Error! Employee cannot be updated right now."
         )
 
-@router.delete("/{employee_id}",response_model=EmployeeResponse)
-async def delete_employee(employee_id, db: DBdependency,user: AdminDependency,redis_client: RedisDependency):
 
+@router.delete("/{employee_id}")
+async def delete_employee(employee_id, db: DBdependency, user: AdminDependency, redis_client: RedisDependency):
     employee = db.query(Employee).filter(Employee.employee_id == employee_id).first()
     if not employee:
         raise HTTPException(
@@ -96,7 +100,7 @@ async def delete_employee(employee_id, db: DBdependency,user: AdminDependency,re
         db.delete(employee)
         db.commit()
         await redis_client.delete("employees:all")
-        return employee
+        return {"message": "Agent deleted succesfully!"}
     except Exception as e:
         db.rollback()
         raise HTTPException(
