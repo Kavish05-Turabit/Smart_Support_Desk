@@ -6,7 +6,6 @@ st.markdown('<p style="font-family:sans-serif; ' \
 'color:Purple; text-align:left; font-size: 62px;">' \
 'Smart Support System</p>'
 , unsafe_allow_html=True)
-st.title("Employees",text_alignment="left")
 
 headers = {"Authorization" : f"Bearer {st.session_state.access_token}"}
 
@@ -20,6 +19,15 @@ if "selected_employee" not in st.session_state:
 
 
 if st.session_state.employee_page == "employee_full_view":
+    ct1,ct2,ct3 = st.columns([4.2,10,1.85])
+    with ct1:
+        st.title("Employees",text_alignment="left")
+    with ct3:
+        st.markdown(f'<br>',unsafe_allow_html=True)
+        if st.button(label = "Create",icon=":material/add:"):
+            st.session_state.employee_page = "employee_update_view"
+            st.rerun()
+
     response = requests.get("http://127.0.0.1:8000/employees/",headers=headers)
     if response.status_code == 200:
         df = pd.DataFrame(response.json())
@@ -40,26 +48,38 @@ if st.session_state.employee_page == "employee_full_view":
         st.session_state.employee_page = "employee_one_view"
         st.rerun()
 
-    if st.button(label = "Create",icon=":material/add:"):
-        st.session_state.employee_page = "employee_update_view"
-        st.rerun()
-
 
 # SINGLE EMPLOYEE VIEW WITH UPDATE AND DELETE BUTTON
 
 
 if st.session_state.employee_page == "employee_one_view":
-    if st.button(label = "Back",icon=":material/arrow_back:"):
-        st.session_state.employee_page = "employee_full_view"
-        st.session_state.selected_employee = None
-        st.rerun()
 
-    tdf = pd.DataFrame([st.session_state.selected_employee])
-    st.dataframe(tdf)
+    cb1,cb2,cb3 = st.columns([2,9,1.15])
+    with cb1:
+        if st.button(label = "Back",icon=":material/arrow_back:"):
+            st.session_state.employee_page = "employee_full_view"
+            st.session_state.selected_employee = None
+            st.rerun()
+    
+    with cb3:
+        if st.button(label="Update"):
+            st.session_state.employee_page = "employee_update_view"
+            st.rerun()
 
-    if st.button(label="Update"):
-        st.session_state.employee_page = "employee_update_view"
-        st.rerun()
+    cur_emp = st.session_state.selected_employee
+    
+    with st.container(width="stretch",border=True):
+        ce1 , ce2 = st.columns([1,1])
+        with ce1:
+            st.markdown(f"**Employee Name**")
+            st.code(" ".join([cur_emp["first_name"],cur_emp["last_name"]]))
+            st.markdown(f"**Access level**")
+            st.code(cur_emp["access_level"].upper())
+        with ce2:
+            st.markdown(f"**Email**")
+            st.code(cur_emp["email"])
+            st.markdown(f"**Phone**")
+            st.code(cur_emp["phone"])
 
 
 # FORM FOR EMPLOYEE CREATION AND UPDATION

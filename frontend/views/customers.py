@@ -6,7 +6,6 @@ st.markdown('<p style="font-family:sans-serif; ' \
 'color:Purple; text-align:left; font-size: 62px;">' \
 'Smart Support System</p>'
 , unsafe_allow_html=True)
-st.title("Customers",text_alignment="left")
 
 headers = {"Authorization" : f"Bearer {st.session_state.access_token}"}
 
@@ -20,6 +19,14 @@ if "selected_customer" not in st.session_state:
 
 
 if st.session_state.customer_page == "customer_full_view":
+    ct1,ct2,ct3 = st.columns([4.2,10,1.85])
+    with ct1:
+        st.title("Customers",text_alignment="left")
+    with ct3:
+        st.markdown(f'<br>',unsafe_allow_html=True)
+        if st.button(label = "Create",icon=":material/add:"):
+            st.session_state.customer_page = "customer_update_view"
+            st.rerun()
     response = requests.get("http://127.0.0.1:8000/customers/",headers=headers)
     if response.status_code == 200:
         df = pd.DataFrame(response.json())
@@ -40,26 +47,42 @@ if st.session_state.customer_page == "customer_full_view":
         st.session_state.customer_page = "customer_one_view"
         st.rerun()
 
-    if st.button(label = "Create",icon=":material/add:"):
-        st.session_state.customer_page = "customer_update_view"
-        st.rerun()
-
 
 # SINGLE CUSTOMER VIEW WITH UPDATE AND DELETE BUTTON
 
 
 if st.session_state.customer_page == "customer_one_view":
-    if st.button(label = "Back",icon=":material/arrow_back:"):
-        st.session_state.customer_page = "customer_full_view"
-        st.session_state.selected_customer = None
-        st.rerun()
+    st.title("Customer Details",text_alignment="left")
 
-    tdf = pd.DataFrame([st.session_state.selected_customer])
-    st.dataframe(tdf)
+    cb1,cb2,cb3 = st.columns([2,9,1.15])
+    with cb1:
+        if st.button(label = "Back",icon=":material/arrow_back:"):
+            st.session_state.customer_page = "customer_full_view"
+            st.session_state.selected_customer = None
+            st.rerun()
+    
+    with cb3:
+        if st.button(label="Update"):
+            st.session_state.customer_page = "customer_update_view"
+            st.rerun()
 
-    if st.button(label="Update"):
-        st.session_state.customer_page = "customer_update_view"
-        st.rerun()
+    cur_cust = st.session_state.selected_customer
+
+    with st.container(width="stretch",border=True):
+        cc1 , cc2 = st.columns([1,1])
+        with cc1:
+            st.markdown(f"**Customer Name**")
+            st.code(" ".join([cur_cust["first_name"],cur_cust["last_name"]]))
+            st.markdown(f"**Company**")
+            st.code(cur_cust["company"])
+            st.markdown(f"**Created by**")
+            st.code(cur_cust["created_by"])
+
+        with cc2:
+            st.markdown(f"**Email**")
+            st.code(cur_cust["email"])
+            st.markdown(f"**Phone**")
+            st.code(cur_cust["phone"])
 
 
 # FORM FOR CUSTOMER CREATION AND UPDATION

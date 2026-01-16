@@ -23,4 +23,6 @@ with col2:
         if response.status_code == 200:
             data = response.json()
             st.session_state["access_token"] = data["access_token"]
+            st.session_state["current_emp"] = data["emp_id"]
+            st.session_state["access_level"] = data["access"]
             st.rerun()
