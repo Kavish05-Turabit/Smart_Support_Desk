@@ -2,6 +2,7 @@ from sqlalchemy import Column,String,Integer,Enum,ForeignKey, Text, DateTime, fu
 from sqlalchemy.orm import relationship
 from app.core.session import Base
 
+
 class Customer(Base):
     __tablename__ = "customers"
 

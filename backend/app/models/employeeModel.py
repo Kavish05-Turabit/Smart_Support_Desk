@@ -1,6 +1,7 @@
-from sqlalchemy import Column,String,Integer,Enum,ForeignKey, Text, DateTime, func
+from sqlalchemy import Column, String, Integer, Enum, ForeignKey, Text, DateTime, func
 from sqlalchemy.orm import relationship
 from app.core.session import Base
+
 
 class Employee(Base):
     __tablename__ = "employees"
@@ -12,8 +13,9 @@ class Employee(Base):
     email = Column(String(255), nullable=False, unique=True)
     password_hash = Column(String(255), nullable=False)
     phone = Column(String(20), nullable=False)
-    access_level = Column(Enum('admin', 'editor', 'viewer'), nullable=False, default='viewer')
+    access_level = Column(Enum('admin', 'agent'), nullable=False, default='agent')
 
     # Relationships
     customers_created = relationship("Customer", back_populates="creator")
-    tickets_assigned = relationship("Ticket", back_populates="assignee")
+    tickets_assigned = relationship("Ticket", back_populates="assignee", foreign_keys="Ticket.assignee_id")
+    tickets_created = relationship("Ticket", back_populates="creator", foreign_keys="Ticket.created_by_id")

@@ -1,19 +1,28 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.api import tickets,dashboard,customers,employees,login
 from app.core.config import settings
 from app.core.session import engine,Base
 import app.core.session as sess
 from contextlib import asynccontextmanager
 from redis import asyncio as aioredis
+from redis.exceptions import ConnectionError as RedisConnectionError
 
 Base.metadata.create_all(bind=engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    sess.redisDb = aioredis.from_url(
-        "redis://localhost:32769",
+    r = sess.redisDb = aioredis.from_url(
+        "redis://localhost:32768",
         decode_responses = True
     )
+    try:
+        await r.ping()
+        sess.redisDb = r
+    except (RedisConnectionError):
+        sess.redisDb = sess.MockRedis()
+        await r.close()
+
     yield
     print("Closing the Database connection")
     engine.dispose()
@@ -21,6 +30,14 @@ async def lifespan(app: FastAPI):
     await sess.redisDb.close()
 
 app = FastAPI(title="Smart Support Desk",lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],      # Allows all origins
+    allow_credentials=True,   # Allows cookies/auth headers
+    allow_methods=["*"],      # Allows all methods (GET, POST, PUT, DELETE, etc.)
+    allow_headers=["*"],      # Allows all headers
+)
 
 app.include_router(dashboard.router,prefix="/dashboard",tags=["Dashboard"])
 app.include_router(login.router,prefix="/login",tags=["Login"])

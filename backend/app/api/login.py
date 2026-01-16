@@ -7,21 +7,25 @@ from typing import Annotated
 
 router = APIRouter()
 
+
 @router.post("/")
 def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    db: DBdependency
+        form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+        db: DBdependency
 ):
-
     user = authenticate_user(db, email=form_data.username, password=form_data.password)
-    print(user)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, 
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = create_access_token(
         data={"sub": user.email, "id": user.employee_id}
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "emp_id" : user.employee_id, 
+        "access" : user.access_level
+    }
