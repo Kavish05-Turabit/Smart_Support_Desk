@@ -111,9 +111,10 @@ if st.session_state.ticket_page == "ticket_update_view":
             st.rerun()
     
     with cbu3:
-        if st.button(label = "Back",icon=":material/arrow_back:"):
-            st.session_state.ticket_page = "ticket_one_view"
-            st.rerun()
+        if st.session_state.selected_ticket:
+            if st.button(label = "Back",icon=":material/arrow_back:"):
+                st.session_state.ticket_page = "ticket_one_view"
+                st.rerun()
 
     ticket = st.session_state.selected_ticket or {}
 

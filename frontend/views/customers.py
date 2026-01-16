@@ -89,13 +89,18 @@ if st.session_state.customer_page == "customer_one_view":
 
 
 if st.session_state.customer_page == "customer_update_view":
-    if st.button(label = "Home",icon=":material/home:"):
-        st.session_state.customer_page = "customer_full_view"
-        st.session_state.selected_customer = None
-        st.rerun()
-    if st.button(label = "Back",icon=":material/arrow_back:"):
-        st.session_state.customer_page = "customer_one_view"
-        st.rerun()
+    cbu1,cbu2,cbu3 = st.columns([2,9,1.3])
+    with cbu1:
+        if st.button(label = "Home",icon=":material/home:"):
+            st.session_state.customer_page = "customer_full_view"
+            st.session_state.selected_customer = None
+            st.rerun()
+    
+    with cbu3:
+        if st.session_state.selected_customer:
+            if st.button(label = "Back",icon=":material/arrow_back:"):
+                st.session_state.customer_page = "customer_one_view"
+                st.rerun()
 
     customer = st.session_state.selected_customer or {}
     form_values = {
