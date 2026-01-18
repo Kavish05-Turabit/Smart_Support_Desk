@@ -98,6 +98,24 @@ if st.session_state.ticket_page == "ticket_one_view":
             st.markdown(f"**Assigned To**")
             st.code(cur_ticket["assignee_id"])
 
+        if st.session_state.current_emp == cur_ticket["created_by_id"] or st.session_state.access_level == "admin":
+            if st.button("Assign to me"):
+                values = {
+                    "assignee_id" : st.session_state.current_emp
+                }
+                requests.put(
+                    f"http://127.0.0.1:8000/tickets/{cur_ticket["ticket_id"]}/",
+                    json=values,
+                    headers=headers
+                )
+                response = requests.get(
+                    f"http://127.0.0.1:8000/tickets/{cur_ticket["ticket_id"]}/",
+                    headers=headers
+                )
+                df = pd.DataFrame([response.json()])
+                st.session_state.selected_ticket = df.fillna(0).iloc[0].to_dict()
+                st.rerun()
+
 
 # FORM FOR TICKET CREATION AND UPDATION
 
