@@ -3,6 +3,8 @@ import requests
 import pandas as pd
 import plotly.express as px
 
+from utils.charts import draw_ticket_lg,draw_ticket_breakdown_pie
+
 st.markdown('<p style="font-family:sans-serif; ' \
 'color:Purple; text-align:left; font-size: 62px;">' \
 'Smart Support System</p>'
@@ -17,6 +19,9 @@ if response.status_code == 200:
     edf = pd.DataFrame(response.json()["Emp_details"])
 else:
     st.warning(body="Connection Error")
+
+df["created_at"] = pd.to_datetime(df["created_at"])
+df_recent = df.sort_values("created_at", ascending=False).head(5)
 
 criteria_map = {
     "Priority": "priority",
@@ -33,34 +38,23 @@ with col1:
         list(criteria_map.keys()),
         horizontal=True,
     )
+    period = st.radio(
+        "Time Period",
+        ["This Week", "Last Week", "Overall"],
+        horizontal=True
+    )
 
     selected_column = criteria_map[selected_label]
 
-    chart_data = df[selected_column].value_counts().reset_index()
-    chart_data.columns = [selected_column, "count"]
-
-    fig = px.pie(
-        chart_data, 
-        values="count", 
-        names=selected_column, 
-        hole=0.5,
-    )
+    fig = draw_ticket_breakdown_pie(df,selected_column,period)
     fig.update_traces(textinfo='percent+label')
-
     st.plotly_chart(fig, width="content")
 
-    ecol1, ecol2 = st.columns([10, 2], vertical_alignment="bottom")
+    st.header("Tickets Created vs Resolved")
+    st.text("Last 5 weeks")
+    fig_tck = draw_ticket_lg(df)
+    st.plotly_chart(fig_tck,width="content")
 
-    with ecol1:
-        st.header("Employee Status")
-
-    with ecol2:
-        empB = st.button("View",width="stretch",key="view_employees")
-
-    st.dataframe(edf,width="stretch")
-
-    if empB:
-        st.switch_page("views/employee.py")
 
 with col3:
     st.header("Tickets Overview")
@@ -81,7 +75,34 @@ with col3:
     with tcol2:
         tckB = st.button("View",width="stretch",key="view_tickets")
 
-    st.dataframe(df[["title","ticket_type","priority"]],width="stretch")
+    st.dataframe(df_recent[["title","ticket_type","priority"]],width="stretch")
 
     if tckB:
         st.switch_page("views/tickets.py")
+
+    st.text("")
+    st.text("")
+    st.text("")
+    ecol1, ecol2 = st.columns([10, 2], vertical_alignment="bottom")
+
+    with ecol1:
+        st.header("Employee Status")
+        st.text("Assigned tickets per employee")
+
+    with ecol2:
+        empB = st.button("View",width="stretch",key="view_employees")
+
+    edf["active_tickets"] = edf["open_count"] + edf["progress_count"]
+    fig_emp = px.bar(
+        edf,
+        y="first_name", x="active_tickets",
+        orientation='h',
+        color="active_tickets", color_continuous_scale="Viridis",
+        range_x=[0,10], range_color=[0, edf["active_tickets"].max()],
+        labels={"first_name" : "Agent" , "active_tickets" : "Current Tickets"}
+    )
+    fig_emp.update_xaxes(tick0=1,dtick=1)
+    st.plotly_chart(fig_emp,width="content")
+
+    if empB:
+        st.switch_page("views/employee.py")
