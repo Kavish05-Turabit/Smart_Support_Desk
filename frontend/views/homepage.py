@@ -19,42 +19,67 @@ else:
 current_emp_tickets = tdf[tdf["assignee_id"] == st.session_state.current_emp]
 
 st.header("Your Tickets")
-if current_emp_tickets.empty:
-    st.subheader("No Tickets currently assigned to you.")
-else:
-    for index,ticket in current_emp_tickets.iterrows():
-        t_id = ticket['ticket_id']
-        if ticket["status"] != "Closed":
-            with st.container(border=True):
-                col1,col2 = st.columns([4,1])
+tab1,tab2 = st.tabs(["Current Tickets" , "Closed Tickets"])
 
-                with col1:
-                    st.markdown(f"**{t_id} - {ticket['title']}**")
-                    st.caption(f"Priority - {ticket['priority']}    |    Status - {ticket['status']}")
-                    desc = ticket.get("description" , "")
-                    st.write(desc[:100] + "..." if len(desc) > 100 else desc)
+with tab1:
+    if current_emp_tickets.empty:
+        st.subheader("No Tickets currently assigned to you.")
+    else:
+        for index,ticket in current_emp_tickets.iterrows():
+            t_id = ticket['ticket_id']
+            if ticket["status"] != "Closed":
+                with st.container(border=True):
+                    col1,col2 = st.columns([4,1])
 
-                with col2:
-                    if st.button("View",key=f"b{t_id}",width="stretch"):
-                        st.session_state.selected_ticket = ticket.fillna(0).to_dict()
-                        st.session_state.ticket_page = "ticket_one_view"
-                        st.switch_page("views/tickets.py")
+                    with col1:
+                        st.markdown(f"**{t_id} - {ticket['title']}**")
+                        st.caption(f"Priority - {ticket['priority']}    |    Status - {ticket['status']}")
+                        desc = ticket.get("description" , "")
+                        st.write(desc[:100] + "..." if len(desc) > 100 else desc)
 
-                    if ticket["status"] == "In Progress":
-                        if st.button("Mark as Done",key=f"m{t_id}",width="stretch",type="primary"):
-                            values = {"status" : "Closed"}
-                            requests.put(
-                                f"http://127.0.0.1:8000/tickets/{t_id}/",
-                                json=values,
-                                headers=headers
-                            )
-                            st.rerun()
-                    else:
-                        if st.button("Start Working",key=f"s{t_id}",width="stretch",type="primary"):
-                            values = {"status" : "In Progress"}
-                            requests.put(
-                                f"http://127.0.0.1:8000/tickets/{t_id}/",
-                                json=values,
-                                headers=headers
-                            )
-                            st.rerun()
+                    with col2:
+                        if st.button("View",key=f"b{t_id}",width="stretch"):
+                            st.session_state.selected_ticket = ticket.fillna(0).to_dict()
+                            st.session_state.ticket_page = "ticket_one_view"
+                            st.switch_page("views/tickets.py")
+
+                        if ticket["status"] == "In Progress":
+                            if st.button("Mark as Done",key=f"m{t_id}",width="stretch",type="primary"):
+                                values = {"status" : "Closed"}
+                                requests.put(
+                                    f"http://127.0.0.1:8000/tickets/{t_id}/",
+                                    json=values,
+                                    headers=headers
+                                )
+                                st.rerun()
+                        else:
+                            if st.button("Start Working",key=f"s{t_id}",width="stretch",type="primary"):
+                                values = {"status" : "In Progress"}
+                                requests.put(
+                                    f"http://127.0.0.1:8000/tickets/{t_id}/",
+                                    json=values,
+                                    headers=headers
+                                )
+                                st.rerun()
+
+with tab2:
+    if current_emp_tickets.empty:
+        st.subheader("No Tickets resolved to you.")
+    else:
+        for index,ticket in current_emp_tickets.iterrows():
+            t_id = ticket['ticket_id']
+            if ticket["status"] == "Closed":
+                with st.container(border=True):
+                    col1,col2 = st.columns([4,1])
+
+                    with col1:
+                        st.markdown(f"**{t_id} - {ticket['title']}**")
+                        st.caption(f"Priority - {ticket['priority']}    |    Status - {ticket['status']}")
+                        desc = ticket.get("description" , "")
+                        st.write(desc[:100] + "..." if len(desc) > 100 else desc)
+
+                    with col2:
+                        if st.button("View",key=f"b{t_id}",width="stretch"):
+                            st.session_state.selected_ticket = ticket.fillna(0).to_dict()
+                            st.session_state.ticket_page = "ticket_one_view"
+                            st.switch_page("views/tickets.py")
