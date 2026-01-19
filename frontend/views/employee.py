@@ -19,12 +19,12 @@ if "selected_employee" not in st.session_state:
 
 
 if st.session_state.employee_page == "employee_full_view":
-    ct1,ct2,ct3 = st.columns([4.2,10,1.85])
+    ct1,ct2,ct3 = st.columns([4.5,10,2.4])
     with ct1:
         st.title("Employees",text_alignment="left")
     with ct3:
         st.markdown(f'<br>',unsafe_allow_html=True)
-        if st.button(label = "Create",icon=":material/add:"):
+        if st.button(label = "Add Agent",icon=":material/add:",type="primary"):
             st.session_state.employee_page = "employee_update_view"
             st.rerun()
 

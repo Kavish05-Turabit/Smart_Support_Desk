@@ -14,6 +14,8 @@ if "customer_page" not in st.session_state:
 if "selected_customer" not in st.session_state:
     st.session_state.selected_customer = None
 
+emp_res = requests.get("http://127.0.0.1:8000/employees/", headers=headers)
+all_employees = emp_res.json() if emp_res.status_code == 200 else []
 
 # VIEW SHOWING ALL CUSTOMERS ADN THEIR DETAILS
 
@@ -67,6 +69,11 @@ if st.session_state.customer_page == "customer_one_view":
             st.rerun()
 
     cur_cust = st.session_state.selected_customer
+    display_creator_name = str(cur_cust["created_by"])
+    for e in all_employees:
+        if e["employee_id"] == cur_cust["created_by"]:
+            display_creator_name = f"{e['first_name']} {e['last_name']}"
+            break
 
     with st.container(width="stretch",border=True):
         cc1 , cc2 = st.columns([1,1])
@@ -76,7 +83,7 @@ if st.session_state.customer_page == "customer_one_view":
             st.markdown(f"**Company**")
             st.code(cur_cust["company"])
             st.markdown(f"**Created by**")
-            st.code(cur_cust["created_by"])
+            st.code(display_creator_name)
 
         with cc2:
             st.markdown(f"**Email**")
