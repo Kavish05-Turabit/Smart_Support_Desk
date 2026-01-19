@@ -49,6 +49,7 @@ async def create_employee(employee_in: EmployeeCreate, db: DBdependency, user: A
         db.add(new_employee)
         db.commit()
         await redis_client.delete("employees:all")
+        await redis_client.delete("dashboard:admin")
 
         db.refresh(new_employee)
         return new_employee
@@ -77,6 +78,7 @@ async def update_employee(employee_id: int, employee_in: EmployeeUpdate, db: DBd
         db.add(employee)
         db.commit()
         await redis_client.delete("employees:all")
+        await redis_client.delete("dashboard:admin")
 
         db.refresh(employee)
         return employee
@@ -100,6 +102,7 @@ async def delete_employee(employee_id, db: DBdependency, user: AdminDependency, 
         db.delete(employee)
         db.commit()
         await redis_client.delete("employees:all")
+        await redis_client.delete("dashboard:admin")
         return {"message": "Agent deleted succesfully!"}
     except Exception as e:
         db.rollback()

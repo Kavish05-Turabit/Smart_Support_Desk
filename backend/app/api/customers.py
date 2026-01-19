@@ -48,6 +48,7 @@ async def create_customer(customer_in: CustomerCreate, db: DBdependency, user: A
         db.add(new_customer)
         db.commit()
         await redis_client.delete("customers:all")
+        await redis_client.delete("dashboard:admin")
 
         db.refresh(new_customer)
         return new_customer
@@ -76,6 +77,7 @@ async def update_customer(customer_id: int, customer_in: CustomerUpdate, db: DBd
         db.add(customer)
         db.commit()
         await redis_client.delete("customers:all")
+        await redis_client.delete("dashboard:admin")
 
         db.refresh(customer)
         return customer
@@ -99,6 +101,7 @@ async def delete_customer(customer_id, db: DBdependency, user: AdminDependency, 
         db.delete(customer)
         db.commit()
         await redis_client.delete("customers:all")
+        await redis_client.delete("dashboard:admin")
         return {"message": "Customer deleted successfully"}
     except Exception as e:
         db.rollback()

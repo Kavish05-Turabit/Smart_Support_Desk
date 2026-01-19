@@ -69,11 +69,11 @@ def draw_ticket_breakdown_pie(df, criteria, period):
     now = pd.Timestamp.now()
 
     if period == "This Week":
-        start = now - pd.Timedelta(days=now.weekday())
+        start = (now - pd.Timedelta(days=now.weekday())).normalize()
         df = df[df["created_at"] >= start]
 
     elif period == "Last Week":
-        start = now - pd.Timedelta(days=now.weekday() + 7)
+        start = (now - pd.Timedelta(days=now.weekday() + 7)).normalize()
         end = start + pd.Timedelta(days=7)
         df = df[(df["created_at"] >= start) & (df["created_at"] < end)]
 

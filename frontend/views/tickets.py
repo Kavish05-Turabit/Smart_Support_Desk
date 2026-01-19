@@ -104,12 +104,12 @@ if st.session_state.ticket_page == "ticket_one_view":
                     "assignee_id" : st.session_state.current_emp
                 }
                 requests.put(
-                    f"http://127.0.0.1:8000/tickets/{cur_ticket["ticket_id"]}/",
+                    f"http://127.0.0.1:8000/tickets/{cur_ticket['ticket_id']}/",
                     json=values,
                     headers=headers
                 )
                 response = requests.get(
-                    f"http://127.0.0.1:8000/tickets/{cur_ticket["ticket_id"]}/",
+                    f"http://127.0.0.1:8000/tickets/{cur_ticket['ticket_id']}/",
                     headers=headers
                 )
                 df = pd.DataFrame([response.json()])
