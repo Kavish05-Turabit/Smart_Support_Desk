@@ -7,13 +7,13 @@ from app.core.session import DBdependency, RedisDependency
 from app.models.employeeModel import Employee
 from app.models.validators import EmployeeCreate, EmployeeResponse, EmployeeUpdate
 from app.core.security import get_password_hash
-from app.core.auth import AdminDependency
+from app.core.auth import AdminDependency, AgentDependency
 
 router = APIRouter()
 
 
 @router.get("/", response_model=List[EmployeeResponse])
-async def get_all_employees(db: DBdependency, user: AdminDependency, redis_client: RedisDependency):
+async def get_all_employees(db: DBdependency, user: AgentDependency, redis_client: RedisDependency):
     try:
         cache_key = "employees:all"
         cached_data = await redis_client.get(cache_key)
@@ -49,6 +49,7 @@ async def create_employee(employee_in: EmployeeCreate, db: DBdependency, user: A
         db.add(new_employee)
         db.commit()
         await redis_client.delete("employees:all")
+        await redis_client.delete("dashboard:admin")
 
         db.refresh(new_employee)
         return new_employee
@@ -77,6 +78,7 @@ async def update_employee(employee_id: int, employee_in: EmployeeUpdate, db: DBd
         db.add(employee)
         db.commit()
         await redis_client.delete("employees:all")
+        await redis_client.delete("dashboard:admin")
 
         db.refresh(employee)
         return employee
@@ -100,6 +102,7 @@ async def delete_employee(employee_id, db: DBdependency, user: AdminDependency, 
         db.delete(employee)
         db.commit()
         await redis_client.delete("employees:all")
+        await redis_client.delete("dashboard:admin")
         return {"message": "Agent deleted succesfully!"}
     except Exception as e:
         db.rollback()

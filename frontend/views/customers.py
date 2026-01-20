@@ -14,6 +14,8 @@ if "customer_page" not in st.session_state:
 if "selected_customer" not in st.session_state:
     st.session_state.selected_customer = None
 
+emp_res = requests.get("http://127.0.0.1:8000/employees/", headers=headers)
+all_employees = emp_res.json() if emp_res.status_code == 200 else []
 
 # VIEW SHOWING ALL CUSTOMERS ADN THEIR DETAILS
 
@@ -33,8 +35,18 @@ if st.session_state.customer_page == "customer_full_view":
     else:
         st.warning(body="Connection Error")
 
+    df["name"] = df["first_name"] + " " + df["last_name"]
+    col_names = {
+        "customer_id" : "ID",
+        "name" : "Customer Name",
+        "email" : "Email ID",
+        "company" : "Company"
+    }
+
+    display_df = df[["customer_id","name","email","company"]].rename(columns=col_names)
+
     customers_df = st.dataframe(
-        df,
+        display_df,
         on_select="rerun",
         selection_mode="single-row",
         width="stretch",
@@ -47,6 +59,23 @@ if st.session_state.customer_page == "customer_full_view":
         st.session_state.customer_page = "customer_one_view"
         st.rerun()
 
+    st.header("Customers created by you")
+    own_df = df[df["created_by"] == st.session_state.current_emp]
+    own_display_df = own_df[["customer_id","name","email","company"]].rename(columns=col_names)
+
+    own_customers_df = st.dataframe(
+        own_display_df,
+        on_select="rerun",
+        selection_mode="single-row",
+        width="stretch",
+        hide_index=True
+    )
+
+    if len(own_customers_df.selection.rows) > 0:
+        index = own_customers_df.selection.rows[0]
+        st.session_state.selected_customer = own_df.iloc[index].to_dict()
+        st.session_state.customer_page = "customer_one_view"
+        st.rerun()
 
 # SINGLE CUSTOMER VIEW WITH UPDATE AND DELETE BUTTON
 
@@ -67,6 +96,11 @@ if st.session_state.customer_page == "customer_one_view":
             st.rerun()
 
     cur_cust = st.session_state.selected_customer
+    display_creator_name = str(cur_cust["created_by"])
+    for e in all_employees:
+        if e["employee_id"] == cur_cust["created_by"]:
+            display_creator_name = f"{e['first_name']} {e['last_name']}"
+            break
 
     with st.container(width="stretch",border=True):
         cc1 , cc2 = st.columns([1,1])
@@ -76,7 +110,7 @@ if st.session_state.customer_page == "customer_one_view":
             st.markdown(f"**Company**")
             st.code(cur_cust["company"])
             st.markdown(f"**Created by**")
-            st.code(cur_cust["created_by"])
+            st.code(display_creator_name)
 
         with cc2:
             st.markdown(f"**Email**")
@@ -89,13 +123,18 @@ if st.session_state.customer_page == "customer_one_view":
 
 
 if st.session_state.customer_page == "customer_update_view":
-    if st.button(label = "Home",icon=":material/home:"):
-        st.session_state.customer_page = "customer_full_view"
-        st.session_state.selected_customer = None
-        st.rerun()
-    if st.button(label = "Back",icon=":material/arrow_back:"):
-        st.session_state.customer_page = "customer_one_view"
-        st.rerun()
+    cbu1,cbu2,cbu3 = st.columns([2,9,1.3])
+    with cbu1:
+        if st.button(label = "Home",icon=":material/home:"):
+            st.session_state.customer_page = "customer_full_view"
+            st.session_state.selected_customer = None
+            st.rerun()
+    
+    with cbu3:
+        if st.session_state.selected_customer:
+            if st.button(label = "Back",icon=":material/arrow_back:"):
+                st.session_state.customer_page = "customer_one_view"
+                st.rerun()
 
     customer = st.session_state.selected_customer or {}
     form_values = {

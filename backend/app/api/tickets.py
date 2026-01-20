@@ -52,6 +52,7 @@ async def create_ticket(ticket_in: TicketCreate, db: DBdependency, user: AgentDe
         db.refresh(new_ticket)
 
         await redis_client.delete("tickets:all")
+        await redis_client.delete("dashboard:admin")
         return new_ticket
 
     except Exception as e:
@@ -80,6 +81,7 @@ async def update_ticket(ticket_id: int, ticket_in: TicketUpdate, db: DBdependenc
         db.add(ticket)
         db.commit()
         await redis_client.delete("tickets:all")
+        await redis_client.delete("dashboard:admin")
 
         db.refresh(ticket)
         return ticket
@@ -103,6 +105,7 @@ async def delete_ticket(ticket_id, db: DBdependency, user: AdminDependency, redi
         db.delete(ticket)
         db.commit()
         await redis_client.delete("tickets:all")
+        await redis_client.delete("dashboard:admin")
         return {"message": "Ticket deleted succesfully!"}
     except Exception as e:
         db.rollback()

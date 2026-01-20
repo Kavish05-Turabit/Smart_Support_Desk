@@ -19,12 +19,12 @@ if "selected_employee" not in st.session_state:
 
 
 if st.session_state.employee_page == "employee_full_view":
-    ct1,ct2,ct3 = st.columns([4.2,10,1.85])
+    ct1,ct2,ct3 = st.columns([4.5,10,2.4])
     with ct1:
         st.title("Employees",text_alignment="left")
     with ct3:
         st.markdown(f'<br>',unsafe_allow_html=True)
-        if st.button(label = "Create",icon=":material/add:"):
+        if st.button(label = "Add Agent",icon=":material/add:",type="primary"):
             st.session_state.employee_page = "employee_update_view"
             st.rerun()
 
@@ -34,12 +34,24 @@ if st.session_state.employee_page == "employee_full_view":
     else:
         st.warning(body="Connection Error")
 
+    df["name"] = df["first_name"] + " " + df["last_name"]
+    display_df = df[["employee_id","name","email","access_level"]].rename(columns={
+        "employee_id" : "ID",
+        "name" : "Employee Name",
+        "email" : "Email ID",
+        "access_level" : "Role",
+    }).copy()
+
     employees_df = st.dataframe(
-        df,
+        display_df,
         on_select="rerun",
         selection_mode="single-row",
         width='stretch',
-        hide_index=True
+        hide_index=True,
+        column_config={
+            "ID" : st.column_config.TextColumn(width="small"),
+            "email" : st.column_config.TextColumn(width="medium")
+        }
     )
 
     if len(employees_df.selection.rows) > 0:
@@ -86,13 +98,18 @@ if st.session_state.employee_page == "employee_one_view":
 
 
 if st.session_state.employee_page == "employee_update_view":
-    if st.button(label = "Home",icon=":material/home:"):
-        st.session_state.employee_page = "employee_full_view"
-        st.session_state.selected_employee = None
-        st.rerun()
-    if st.button(label = "Back",icon=":material/arrow_back:"):
-        st.session_state.employee_page = "employee_one_view"
-        st.rerun()
+    cbu1,cbu2,cbu3 = st.columns([2,9,1.3])
+    with cbu1:
+        if st.button(label = "Home",icon=":material/home:"):
+            st.session_state.employee_page = "employee_full_view"
+            st.session_state.selected_employee = None
+            st.rerun()
+
+    with cbu3:
+        if st.session_state.selected_employee:
+            if st.button(label = "Back",icon=":material/arrow_back:"):
+                st.session_state.employee_page = "employee_one_view"
+                st.rerun()
 
     employee = st.session_state.selected_employee or {}
     form_values = {
