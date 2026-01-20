@@ -69,6 +69,6 @@ async def get_statistics(user, db: Session, redis_client: Redis):
         "employees" : employees,
         "Emp_details" : emp_details_data
     }
-    await redis_client.set("dashboard:admin",json.dumps(stats),ex=60)
+    await redis_client.set("dashboard:admin",json.dumps(stats))
 
     return stats

@@ -183,12 +183,14 @@ if st.session_state.ticket_page == "ticket_one_view":
             headers=headers
         )
         notes = response.json()
-        
-        for note in notes:
-            with st.chat_message("human"):
-                st.write(note.get('author_name'))
-                st.write(note['content'])
-                st.caption(note['created_at'])
+        if len(notes) != 0:
+            for note in notes:
+                with st.chat_message("human"):
+                    st.write(note.get('author_name'))
+                    st.write(note['content'])
+                    st.caption(note['created_at'])
+        else:
+            st.write("No Notes yet")
 
     content = st.chat_input("Add a note")
     if content:
