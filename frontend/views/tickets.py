@@ -42,17 +42,45 @@ if st.session_state.ticket_page == "ticket_full_view":
     else:
         st.warning(body="Connection Error")
 
+    col_names = {
+        "ticket_id" : "ID",
+        "title" : "Title",
+        "ticket_type" : "Type",
+        "priority" : "Priority",
+        "status" : "Status",
+        "assignee_id" : "Assigned To"
+    }
+    display_df = df[["ticket_id","title","ticket_type","priority","status","assignee_id"]].rename(columns=col_names).copy()
+
     tickets_df = st.dataframe(
-        df,
+        display_df,
+        on_select="rerun",
+        selection_mode="single-row",
+        width="stretch",
+        hide_index=True,
+    )
+
+    if len(tickets_df.selection.rows) > 0:
+        index = tickets_df.selection.rows[0]
+        st.session_state.selected_ticket = df.fillna(0).iloc[index].to_dict()
+        st.session_state.ticket_page = "ticket_one_view"
+        st.rerun()
+
+    st.header("Tickets created by you")
+    own_df = df[df["created_by_id"] == st.session_state.current_emp]
+    own_display_df = own_df[["ticket_id","title","ticket_type","priority","status","assignee_id"]].rename(columns=col_names).copy()
+
+    own_tickets_df = st.dataframe(
+        own_display_df,
         on_select="rerun",
         selection_mode="single-row",
         width="stretch",
         hide_index=True
     )
 
-    if len(tickets_df.selection.rows) > 0:
-        index = tickets_df.selection.rows[0]
-        st.session_state.selected_ticket = df.fillna(0).iloc[index].to_dict()
+    if len(own_tickets_df.selection.rows) > 0:
+        index = own_tickets_df.selection.rows[0]
+        st.session_state.selected_ticket = own_df.fillna(0).iloc[index].to_dict()
         st.session_state.ticket_page = "ticket_one_view"
         st.rerun()
 
@@ -94,7 +122,7 @@ if st.session_state.ticket_page == "ticket_one_view":
     
     with cb3:
         if st.button(label="Update",type="primary"):
-            if st.session_state.current_emp == cur_ticket["created_by_id"] or st.session_state.access_level == "admin":
+            if st.session_state.access_level == "admin":
                 st.session_state.ticket_page = "ticket_update_view"
                 st.rerun()
     

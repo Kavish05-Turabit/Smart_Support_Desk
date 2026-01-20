@@ -34,12 +34,24 @@ if st.session_state.employee_page == "employee_full_view":
     else:
         st.warning(body="Connection Error")
 
+    df["name"] = df["first_name"] + " " + df["last_name"]
+    display_df = df[["employee_id","name","email","access_level"]].rename(columns={
+        "employee_id" : "ID",
+        "name" : "Employee Name",
+        "email" : "Email ID",
+        "access_level" : "Role",
+    }).copy()
+
     employees_df = st.dataframe(
-        df,
+        display_df,
         on_select="rerun",
         selection_mode="single-row",
         width='stretch',
-        hide_index=True
+        hide_index=True,
+        column_config={
+            "ID" : st.column_config.TextColumn(width="small"),
+            "email" : st.column_config.TextColumn(width="medium")
+        }
     )
 
     if len(employees_df.selection.rows) > 0:

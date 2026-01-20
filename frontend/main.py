@@ -27,7 +27,6 @@ else:
     else:
         pages = st.navigation([
             homepage_page,
-            employee_page,
             ticket_page,
             customer_page,
         ])

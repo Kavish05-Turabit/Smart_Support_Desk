@@ -35,8 +35,18 @@ if st.session_state.customer_page == "customer_full_view":
     else:
         st.warning(body="Connection Error")
 
+    df["name"] = df["first_name"] + " " + df["last_name"]
+    col_names = {
+        "customer_id" : "ID",
+        "name" : "Customer Name",
+        "email" : "Email ID",
+        "company" : "Company"
+    }
+
+    display_df = df[["customer_id","name","email","company"]].rename(columns=col_names)
+
     customers_df = st.dataframe(
-        df,
+        display_df,
         on_select="rerun",
         selection_mode="single-row",
         width="stretch",
@@ -49,6 +59,23 @@ if st.session_state.customer_page == "customer_full_view":
         st.session_state.customer_page = "customer_one_view"
         st.rerun()
 
+    st.header("Customers created by you")
+    own_df = df[df["created_by"] == st.session_state.current_emp]
+    own_display_df = own_df[["customer_id","name","email","company"]].rename(columns=col_names)
+
+    own_customers_df = st.dataframe(
+        own_display_df,
+        on_select="rerun",
+        selection_mode="single-row",
+        width="stretch",
+        hide_index=True
+    )
+
+    if len(own_customers_df.selection.rows) > 0:
+        index = own_customers_df.selection.rows[0]
+        st.session_state.selected_customer = own_df.iloc[index].to_dict()
+        st.session_state.customer_page = "customer_one_view"
+        st.rerun()
 
 # SINGLE CUSTOMER VIEW WITH UPDATE AND DELETE BUTTON
 

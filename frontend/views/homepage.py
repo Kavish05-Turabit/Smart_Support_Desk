@@ -22,7 +22,7 @@ st.header("Your Tickets")
 tab1,tab2 = st.tabs(["Current Tickets" , "Closed Tickets"])
 
 with tab1:
-    if current_emp_tickets.empty:
+    if (current_emp_tickets[current_emp_tickets["status"] != "Closed"]).empty:
         st.subheader("No Tickets currently assigned to you.")
     else:
         for index,ticket in current_emp_tickets.iterrows():
@@ -64,7 +64,7 @@ with tab1:
 
 with tab2:
     if current_emp_tickets.empty:
-        st.subheader("No Tickets resolved to you.")
+        st.subheader("No Tickets resolved by you.")
     else:
         for index,ticket in current_emp_tickets.iterrows():
             t_id = ticket['ticket_id']
