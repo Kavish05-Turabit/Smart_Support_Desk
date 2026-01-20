@@ -144,3 +144,27 @@ class EmployeeResponse(EmployeeBase):
     access_level: AccessLevel
     
     model_config = ConfigDict(from_attributes=True)
+
+
+"""     Pydantic Classes for validation of Database Table : notes
+        Corresponding to SQAlchemy Class Note
+"""
+
+class NoteBase(BaseModel):
+    content: str
+
+class NoteCreate(NoteBase):
+    pass
+
+class NoteUpdate(NoteBase):
+    pass
+
+class NoteResponse(NoteBase):
+    note_id: int
+    ticket_id: int
+    author_id: int
+    content: str
+    created_at: datetime
+
+    author_name: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)

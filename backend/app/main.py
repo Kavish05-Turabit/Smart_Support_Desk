@@ -1,13 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import tickets,dashboard,customers,employees,login
+from app.api import tickets,dashboard,customers,employees,login,notes
 from app.core.config import settings
 from app.core.session import engine,Base
 import app.core.session as sess
 from contextlib import asynccontextmanager
 from redis import asyncio as aioredis
 from redis.exceptions import ConnectionError as RedisConnectionError
-
+ 
 Base.metadata.create_all(bind=engine)
 
 @asynccontextmanager
@@ -44,6 +44,7 @@ app.include_router(login.router,prefix="/login",tags=["Login"])
 app.include_router(tickets.router,prefix="/tickets",tags=["Tickets"])
 app.include_router(customers.router,prefix="/customers",tags=["Customers"])
 app.include_router(employees.router,prefix="/employees",tags=["Employees"])
+app.include_router(notes.router,prefix="/notes",tags=["Notes"])
 
 @app.get("/")
 def root():
