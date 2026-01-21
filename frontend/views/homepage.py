@@ -18,6 +18,22 @@ else:
 
 current_emp_tickets = tdf[tdf["assignee_id"] == st.session_state.current_emp]
 
+st.header("Overview")
+c1,c2,c3,c4 = st.columns(4)
+
+with c1:
+    st.metric(label="Current Tickets",value=current_emp_tickets[current_emp_tickets["status"] != "Closed"].shape[0],width="stretch")
+with c2:
+    st.metric(label="Critical Tickets",value=current_emp_tickets[current_emp_tickets["priority"] == "critical"].shape[0],width="stretch")
+with c3:
+    st.metric(label="Tickets closed by you",value=current_emp_tickets[current_emp_tickets["status"] == "Closed"].shape[0],width="stretch")
+with c4:
+    tickets_left = current_emp_tickets[current_emp_tickets["status"] != "Closed"].shape[0]
+    total_tickets = current_emp_tickets.shape[0]
+    work_done = (tickets_left/total_tickets) * 100
+    st.metric(label="Work Done",value=f"{work_done}%",width="stretch")
+
+
 st.header("Your Tickets")
 tab1,tab2 = st.tabs(["Current Tickets" , "Closed Tickets"])
 
@@ -63,7 +79,7 @@ with tab1:
                                 st.rerun()
 
 with tab2:
-    if current_emp_tickets.empty:
+    if (current_emp_tickets[current_emp_tickets["status"] == "Closed"]).empty:
         st.subheader("No Tickets resolved by you.")
     else:
         for index,ticket in current_emp_tickets.iterrows():
