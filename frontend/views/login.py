@@ -24,6 +24,7 @@ with col2:
             data = response.json()
             st.session_state["access_token"] = data["access_token"]
             st.session_state["current_emp"] = data["emp_id"]
+            st.session_state["current_emp_name"] = data["emp_name"]
             st.session_state["access_level"] = data["access"]
             st.rerun()
         else:
