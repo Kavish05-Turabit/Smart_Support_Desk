@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import pandas as pd
+from utils.dialogs import open_status_dialog
 
 st.markdown('<p style="font-family:sans-serif; ' \
 'color:Purple; text-align:left; font-size: 62px;">' \
@@ -28,10 +29,10 @@ with c2:
 with c3:
     st.metric(label="Tickets closed by you",value=current_emp_tickets[current_emp_tickets["status"] == "Closed"].shape[0],width="stretch")
 with c4:
-    tickets_left = current_emp_tickets[current_emp_tickets["status"] != "Closed"].shape[0]
+    tickets_left = current_emp_tickets[current_emp_tickets["status"] == "Closed"].shape[0]
     total_tickets = current_emp_tickets.shape[0]
     work_done = (tickets_left/total_tickets) * 100
-    st.metric(label="Work Done",value=f"{work_done}%",width="stretch")
+    st.metric(label="Work Done",value=f"{work_done:.1f}%",width="stretch")
 
 
 st.header("Your Tickets")
@@ -61,22 +62,11 @@ with tab1:
 
                         if ticket["status"] == "In Progress":
                             if st.button("Mark as Done",key=f"m{t_id}",width="stretch",type="primary"):
-                                values = {"status" : "Closed"}
-                                requests.put(
-                                    f"http://127.0.0.1:8000/tickets/{t_id}/",
-                                    json=values,
-                                    headers=headers
-                                )
-                                st.rerun()
+                                open_status_dialog(ticket_id=t_id,new_status="Closed",headers=headers)
+        
                         else:
-                            if st.button("Start Working",key=f"s{t_id}",width="stretch",type="primary"):
-                                values = {"status" : "In Progress"}
-                                requests.put(
-                                    f"http://127.0.0.1:8000/tickets/{t_id}/",
-                                    json=values,
-                                    headers=headers
-                                )
-                                st.rerun()
+                            if st.button("Open Ticket",key=f"s{t_id}",width="stretch",type="primary"):
+                                open_status_dialog(ticket_id=t_id,new_status="In Progress",headers=headers)
 
 with tab2:
     if (current_emp_tickets[current_emp_tickets["status"] == "Closed"]).empty:

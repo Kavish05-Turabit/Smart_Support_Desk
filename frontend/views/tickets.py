@@ -157,7 +157,7 @@ if st.session_state.ticket_page == "ticket_one_view":
             st.code(display_assignee_name)
 
         if st.session_state.current_emp == cur_ticket["created_by_id"] or st.session_state.access_level == "admin":
-            if cur_ticket["assignee_id"] == 0:
+            if cur_ticket["assignee_id"] == 0 :
                 if st.button("Assign to me"):
                     values = {
                         "assignee_id" : st.session_state.current_emp
@@ -192,15 +192,16 @@ if st.session_state.ticket_page == "ticket_one_view":
         else:
             st.write("No Notes yet")
 
-    content = st.chat_input("Add a note")
-    if content:
-        res = requests.post(
-            f"http://127.0.0.1:8000/notes/{cur_ticket['ticket_id']}/",
-            json={"content" : content},
-            headers=headers
-        )
-        if res.status_code == 200:
-            st.rerun()
+    if (st.session_state.current_emp == cur_ticket["assignee_id"] or st.session_state.access_level == "admin") and cur_ticket["status"] != "Closed":
+        content = st.chat_input("Add a note")
+        if content:
+            res = requests.post(
+                f"http://127.0.0.1:8000/notes/{cur_ticket['ticket_id']}/",
+                json={"content" : content},
+                headers=headers
+            )
+            if res.status_code == 200:
+                st.rerun()
 
 
 # FORM FOR TICKET CREATION AND UPDATION
