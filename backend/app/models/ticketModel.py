@@ -29,3 +29,4 @@ class Ticket(Base):
     customer = relationship("Customer", back_populates="tickets")
     assignee = relationship("Employee", back_populates="tickets_assigned",foreign_keys=[assignee_id])
     creator = relationship("Employee", back_populates="tickets_created",foreign_keys=[created_by_id])
+    notes = relationship("Note",back_populates="topic")

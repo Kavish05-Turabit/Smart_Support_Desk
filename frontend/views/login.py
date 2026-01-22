@@ -10,8 +10,8 @@ col1,col2,col3 = st.columns([2,3,2])
 
 with col2:
     with st.form(key="Login Form"):
-        email = st.text_input("Email",placeholder="admin@gmail.com")
-        password = st.text_input("Password",type="password",placeholder="12345678")
+        email = st.text_input("Email",placeholder="Enter company email")
+        password = st.text_input("Password",type="password",placeholder="Enter password")
         login = st.form_submit_button("Login")
 
     if login:
@@ -24,5 +24,8 @@ with col2:
             data = response.json()
             st.session_state["access_token"] = data["access_token"]
             st.session_state["current_emp"] = data["emp_id"]
+            st.session_state["current_emp_name"] = data["emp_name"]
             st.session_state["access_level"] = data["access"]
             st.rerun()
+        else:
+            st.toast(body="Invalid Credentials! Please try again" , icon="💀")

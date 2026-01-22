@@ -27,5 +27,6 @@ def login_for_access_token(
         "access_token": access_token, 
         "token_type": "bearer",
         "emp_id" : user.employee_id, 
-        "access" : user.access_level
+        "access" : user.access_level,
+        "emp_name" : ' '.join([user.first_name,user.last_name])
     }
