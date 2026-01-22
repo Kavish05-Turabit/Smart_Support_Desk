@@ -91,6 +91,7 @@ if st.session_state.ticket_page == "ticket_full_view":
 if st.session_state.ticket_page == "ticket_one_view":
 
     cur_ticket = st.session_state.selected_ticket
+    update_error = 0
     
     # Get Customer Name
     display_cust_name = str(cur_ticket["customer_id"])
@@ -125,6 +126,10 @@ if st.session_state.ticket_page == "ticket_one_view":
             if st.session_state.access_level == "admin":
                 st.session_state.ticket_page = "ticket_update_view"
                 st.rerun()
+            else:
+                update_error = 1
+    if update_error ==1 :            
+        st.error("You do not have permissions to update!")
     
     with st.container(width="stretch",border=True):
         st.markdown(f"**Ticket Title**")
@@ -293,20 +298,41 @@ if st.session_state.ticket_page == "ticket_update_view":
                 "status" : ticket.get("status","Open"),
                 "assignee_id" : final_assignee
             }
+            try:
+                if st.session_state.selected_ticket:
+                    # Update
+                    res = requests.put(
+                        f"http://127.0.0.1:8000/tickets/{ticket.get('ticket_id')}/",
+                        json=new_ticket_data,
+                        headers=headers
+                    )
+                else:
+                    # Create
+                    res = requests.post(
+                        "http://127.0.0.1:8000/tickets/",
+                        json=new_ticket_data,
+                        headers=headers
+                    )
 
-            if st.session_state.selected_ticket:
-                requests.put(
-                    f"http://127.0.0.1:8000/tickets/{ticket.get('ticket_id')}/",
-                    json=new_ticket_data,
-                    headers=headers
-                )
-            else:
-                requests.post(
-                    "http://127.0.0.1:8000/tickets/",
-                    json=new_ticket_data,
-                    headers=headers
-                )
-            
-            st.session_state.ticket_page = "ticket_full_view"
-            st.session_state.selected_ticket = None
-            st.rerun()
+                if res.status_code in [200, 201]:
+                    st.success("Ticket saved successfully!")
+                    st.session_state.ticket_page = "ticket_full_view"
+                    st.session_state.selected_ticket = None
+                    st.rerun()
+                elif res.status_code == 422:
+                    error_data = res.json().get("detail", [])
+                    if isinstance(error_data, list):
+                        for err in error_data:
+                            field = err["loc"][-1]
+                            msg = err["msg"]
+                            st.error(f"❌ {field.title()}: {msg}")
+                    else:
+                        st.error(f"❌ {error_data}")
+                    st.stop()
+                else:
+                    st.error(f"❌ Error {res.status_code}: {res.text}")
+                    st.stop()
+
+            except Exception as e:
+                st.error(f"❌ Connection Error: {e}")
+                st.stop()
