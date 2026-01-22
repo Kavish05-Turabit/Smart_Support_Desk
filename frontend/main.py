@@ -39,3 +39,7 @@ if "access_token" in st.session_state:
         st.code(st.session_state.current_emp_name)
         st.text("Access Level")
         st.code(st.session_state.access_level)
+
+        if st.button("Logout"):
+            del st.session_state.access_token
+            st.rerun()
