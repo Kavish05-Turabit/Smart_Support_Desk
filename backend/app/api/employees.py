@@ -1,7 +1,7 @@
 import json
 from fastapi import APIRouter, HTTPException, status
 from fastapi.encoders import jsonable_encoder
-from typing import List
+from typing import List, Optional
 
 from app.core.session import DBdependency, RedisDependency
 from app.models.employeeModel import Employee
@@ -13,20 +13,26 @@ router = APIRouter()
 
 
 @router.get("/", response_model=List[EmployeeResponse])
-async def get_all_employees(db: DBdependency, user: AgentDependency, redis_client: RedisDependency):
+async def get_all_employees(db: DBdependency, user: AdminDependency, redis_client: RedisDependency,
+                            skip: int = 0,limit: Optional[int] = None):
     try:
         cache_key = "employees:all"
         cached_data = await redis_client.get(cache_key)
         if cached_data:
             return json.loads(cached_data)
 
-        employees = db.query(Employee).all()
-        data = jsonable_encoder(employees)
-        await redis_client.append(cache_key, json.dumps(data))
+        if not limit:
+            employees = db.query(Employee).all()
+            data = jsonable_encoder(employees)
+            await redis_client.append(cache_key, json.dumps(data))
+        else:
+            employees = db.query(Employee).offset(skip).limit(limit).all()
         return employees
     except Exception as e:
         print("Cache Error :- ", e)
-        return db.query(Employee).all()
+        if not limit:
+            return db.query(Employee).all()
+        return db.query(Employee).offset(skip).limit(limit).all()
 
 
 @router.get("/{employee_id}", response_model=EmployeeResponse)

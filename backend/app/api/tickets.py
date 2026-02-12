@@ -1,7 +1,7 @@
 import json
 from fastapi import APIRouter, HTTPException, status
 from fastapi.encoders import jsonable_encoder
-from typing import List
+from typing import List, Optional
 
 from app.core.session import DBdependency, RedisDependency
 from app.core.auth import AgentDependency, AdminDependency
@@ -12,20 +12,25 @@ router = APIRouter()
 
 
 @router.get("/", response_model=List[TicketResponse])
-async def get_all_tickets(db: DBdependency, user: AgentDependency, redis_client: RedisDependency):
+async def get_all_tickets(db: DBdependency, user: AgentDependency, redis_client: RedisDependency,
+                          skip: int = 0,limit: Optional[int] = None):
     try:
         cache_key = "tickets:all"
         cached_data = await redis_client.get(cache_key)
         if cached_data:
             return json.loads(cached_data)
-
-        tickets = db.query(Ticket).all()
-        data = jsonable_encoder(tickets)
-        await redis_client.set(cache_key, json.dumps(data), ex=60)
+        if not limit:
+            tickets = db.query(Ticket).all()
+            data = jsonable_encoder(tickets)
+            await redis_client.set(cache_key, json.dumps(data), ex=60)
+        else:
+            tickets = db.query(Ticket).offset(skip).limit(limit).all()
         return tickets
     except Exception as e:
         print("Cache Error :- ", e)
-        return db.query(Ticket).all()
+        if not limit:
+            return db.query(Ticket).all()
+        return db.query(Ticket).offset(skip).limit(limit).all()
 
 
 @router.get("/{ticket_id}", response_model=TicketResponse)
