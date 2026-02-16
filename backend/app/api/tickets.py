@@ -13,7 +13,7 @@ router = APIRouter()
 
 @router.get("/", response_model=List[TicketResponse])
 async def get_all_tickets(db: DBdependency, user: AgentDependency, redis_client: RedisDependency,
-                          skip: int = 0,limit: Optional[int] = None):
+                          skip: int = 0, limit: Optional[int] = None):
     try:
         cache_key = "tickets:all"
         cached_data = await redis_client.get(cache_key)
@@ -33,6 +33,33 @@ async def get_all_tickets(db: DBdependency, user: AgentDependency, redis_client:
         return db.query(Ticket).offset(skip).limit(limit).all()
 
 
+@router.get("/search")
+async def search_ticket(db: DBdependency, user: AgentDependency,
+                        customer_id: Optional[int] = None, employee_id: Optional[int] = None):
+    print("employee_id received:", employee_id)
+    if employee_id:
+        tickets = db.query(Ticket).filter(Ticket.assignee_id == employee_id).all()
+        if not tickets:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tickets for employee {employee_id} not found."
+            )
+        return tickets
+    if customer_id:
+        tickets = db.query(Ticket).filter(Ticket.customer_id == customer_id).all()
+        if not tickets:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tickets for customers {customer_id} not found."
+            )
+        return tickets
+
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Mention at least 1 filter to search with"
+    )
+
+
 @router.get("/{ticket_id}", response_model=TicketResponse)
 def get_ticket(ticket_id, db: DBdependency, user: AgentDependency):
     ticket = db.query(Ticket).filter(Ticket.ticket_id == ticket_id).first()
@@ -50,7 +77,7 @@ async def create_ticket(ticket_in: TicketCreate, db: DBdependency, user: AgentDe
     try:
         new_ticket = Ticket(**ticket_in.model_dump())
         setattr(new_ticket, "created_by_id", user.employee_id)
-        if getattr(new_ticket,"assignee_id") == 0:
+        if getattr(new_ticket, "assignee_id") == 0:
             setattr(new_ticket, "assignee_id", None)
         db.add(new_ticket)
         db.commit()
@@ -118,3 +145,5 @@ async def delete_ticket(ticket_id, db: DBdependency, user: AdminDependency, redi
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database Error! Ticket cannot be deleted right now."
         )
+
+
