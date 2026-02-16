@@ -187,6 +187,7 @@ class SenderType(str, Enum):
 class ChatSessionResponse(BaseModel):
     chat_id: int
     chat_title: str
+    init_time: datetime
 
 
 class ChatMessageCreate(BaseModel):
