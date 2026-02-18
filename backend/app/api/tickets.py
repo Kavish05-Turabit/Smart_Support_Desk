@@ -105,7 +105,7 @@ async def update_ticket(ticket_id: int, ticket_in: TicketUpdate, db: DBdependenc
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Ticket with ID: {ticket_id} not found."
         )
-    if user.access_level != "Admin" and ticket.assignee_id != user.employee_id:
+    if user.access_level != "admin" and ticket.assignee_id != user.employee_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"You do not have the authority to update this ticket."
