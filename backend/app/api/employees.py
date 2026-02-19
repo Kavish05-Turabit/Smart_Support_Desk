@@ -1,4 +1,6 @@
 import json
+import logging
+
 from fastapi import APIRouter, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from typing import List
@@ -10,6 +12,7 @@ from app.core.security import get_password_hash
 from app.core.auth import AdminDependency, AgentDependency
 
 router = APIRouter()
+logger = logging.getLogger("EMPLOYEE")
 
 
 @router.get("/", response_model=List[EmployeeResponse])
@@ -51,10 +54,12 @@ async def create_employee(employee_in: EmployeeCreate, db: DBdependency, user: A
         await redis_client.delete("employees:all")
         await redis_client.delete("dashboard:admin")
 
+        logger.info(f"User {user.employee_id} created Employee {new_employee.employee_id} with {new_employee.access_level} privilege")
         db.refresh(new_employee)
         return new_employee
     except Exception as e:
         db.rollback()
+        logger.error(f"Failed to create Employee for User {user.employee_id}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database Error! Employee Creation failed."
@@ -80,10 +85,12 @@ async def update_employee(employee_id: int, employee_in: EmployeeUpdate, db: DBd
         await redis_client.delete("employees:all")
         await redis_client.delete("dashboard:admin")
 
+        logger.info(f"User {user.employee_id} updated Employee {employee.employee_id}")
         db.refresh(employee)
         return employee
     except Exception as e:
         db.rollback()
+        logger.error(f"Failed to update Employee {employee_id} for User {user.employee_id}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database Error! Employee cannot be updated right now."
@@ -101,11 +108,14 @@ async def delete_employee(employee_id, db: DBdependency, user: AdminDependency, 
     try:
         db.delete(employee)
         db.commit()
+
+        logger.info(f"User {user.employee_id} deleted Employee {employee_id}")
         await redis_client.delete("employees:all")
         await redis_client.delete("dashboard:admin")
         return {"message": "Agent deleted succesfully!"}
     except Exception as e:
         db.rollback()
+        logger.error(f"Failed to delete Employee {employee_id} for User {user.employee_id}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database Error! Employee cannot be deleted right now."

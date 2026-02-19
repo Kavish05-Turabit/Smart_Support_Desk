@@ -1,4 +1,6 @@
 import json
+import logging
+
 from fastapi import APIRouter, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from typing import List
@@ -9,6 +11,7 @@ from app.models.ticketModel import Ticket
 from app.models.validators import TicketCreate, TicketResponse, TicketUpdate
 
 router = APIRouter()
+logger = logging.getLogger("TICKET")
 
 
 @router.get("/", response_model=List[TicketResponse])
@@ -51,13 +54,14 @@ async def create_ticket(ticket_in: TicketCreate, db: DBdependency, user: AgentDe
         db.commit()
         db.refresh(new_ticket)
 
+        logger.info(f"User {user.employee_id} created Ticket {new_ticket.ticket_id} for Customer {new_ticket.customer_id}")
         await redis_client.delete("tickets:all")
         await redis_client.delete("dashboard:admin")
         return new_ticket
 
     except Exception as e:
         db.rollback()
-        print(f"ERROR CREATING TICKET: {e}")
+        logger.error(f"Failed to create a ticket for user {user.employee_id}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database Error! Ticket Creation failed."
@@ -80,13 +84,16 @@ async def update_ticket(ticket_id: int, ticket_in: TicketUpdate, db: DBdependenc
     try:
         db.add(ticket)
         db.commit()
+        db.refresh(ticket)
+
+        logger.info(f"User {user.employee_id} updated Ticket {ticket.ticket_id}")
         await redis_client.delete("tickets:all")
         await redis_client.delete("dashboard:admin")
 
-        db.refresh(ticket)
         return ticket
     except Exception as e:
         db.rollback()
+        logger.error(f"Failed to update Ticket {ticket_id} for User {user.employee_id}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database Error! Ticket cannot be updated right now."
@@ -104,11 +111,14 @@ async def delete_ticket(ticket_id, db: DBdependency, user: AdminDependency, redi
     try:
         db.delete(ticket)
         db.commit()
+
+        logger.info(f"User {user.employee_id} deleted Ticket {ticket.ticket_id}")
         await redis_client.delete("tickets:all")
         await redis_client.delete("dashboard:admin")
-        return {"message": "Ticket deleted succesfully!"}
+        return {"message": "Ticket deleted successfully!"}
     except Exception as e:
         db.rollback()
+        logger.error(f"Failed to delete Ticket {ticket_id} for user {user.employee_id}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database Error! Ticket cannot be deleted right now."

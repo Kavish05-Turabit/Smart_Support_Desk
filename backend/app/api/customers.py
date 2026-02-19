@@ -1,4 +1,5 @@
 import json
+import logging
 from fastapi import APIRouter, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from typing import List
@@ -9,6 +10,7 @@ from app.models.customerModel import Customer
 from app.models.validators import CustomerCreate, CustomerResponse, CustomerUpdate
 
 router = APIRouter()
+logger = logging.getLogger("CUSTOMER")
 
 
 @router.get("/", response_model=List[CustomerResponse])
@@ -50,10 +52,12 @@ async def create_customer(customer_in: CustomerCreate, db: DBdependency, user: A
         await redis_client.delete("customers:all")
         await redis_client.delete("dashboard:admin")
 
+        logger.info(f"User {user.employee_id} created Customer {new_customer.customer_id}")
         db.refresh(new_customer)
         return new_customer
     except Exception as e:
         db.rollback()
+        logger.error(f"Failed to create Customer for User {user.employee_id}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database Error! Customer Creation failed."
@@ -79,10 +83,12 @@ async def update_customer(customer_id: int, customer_in: CustomerUpdate, db: DBd
         await redis_client.delete("customers:all")
         await redis_client.delete("dashboard:admin")
 
+        logger.info(f"User {user.employee_id} updated Customer {customer.customer_id}")
         db.refresh(customer)
         return customer
     except Exception as e:
         db.rollback()
+        logger.error(f"Failed to update Customer {customer_id} for User {user.employee_id}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database Error! Customer cannot be updated right now."
@@ -100,11 +106,14 @@ async def delete_customer(customer_id, db: DBdependency, user: AdminDependency, 
     try:
         db.delete(customer)
         db.commit()
+
+        logger.info(f"User {user.employee_id} deleted Customer {customer_id}")
         await redis_client.delete("customers:all")
         await redis_client.delete("dashboard:admin")
         return {"message": "Customer deleted successfully"}
     except Exception as e:
         db.rollback()
+        logger.error(f"Failed to delete Customer {customer_id} for User {user.employee_id}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database Error! Customer cannot be deleted right now."

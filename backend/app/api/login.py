@@ -1,11 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
-from app.core.session import DBdependency
-from app.core.auth import authenticate_user, create_access_token
+import logging
+import time
 from typing import Annotated
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+
+from app.core.auth import authenticate_user, create_access_token
+from app.core.session import DBdependency
+
 router = APIRouter()
+logger = logging.getLogger("LOGIN")
 
 
 @router.post("/")
@@ -23,10 +27,11 @@ def login_for_access_token(
     access_token = create_access_token(
         data={"sub": user.email, "id": user.employee_id}
     )
+    logger.info(f"User {user.employee_id} - {user.email} logged in at {time.ctime()}")
     return {
-        "access_token": access_token, 
+        "access_token": access_token,
         "token_type": "bearer",
-        "emp_id" : user.employee_id, 
-        "access" : user.access_level,
-        "emp_name" : ' '.join([user.first_name,user.last_name])
+        "emp_id": user.employee_id,
+        "access": user.access_level,
+        "emp_name": ' '.join([user.first_name, user.last_name])
     }
