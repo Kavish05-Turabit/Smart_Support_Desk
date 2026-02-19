@@ -40,7 +40,7 @@ class AccessLevel(str, Enum):
 
 
 class TicketBase(BaseModel):
-    title: str = Field(..., max_length=255)
+    title: str = Field(..., min_length=1, max_length=255, description="Title Cannot be empty")
     description: Optional[str] = None
     ticket_type: TicketType = TicketType.INQUIRY
 
@@ -53,7 +53,7 @@ class TicketCreate(TicketBase):
 
 
 class TicketUpdate(BaseModel):
-    title: Optional[str] = None
+    title: Optional[str] = Field(None, min_length=1, max_length=255, description="Title Cannot be empty")
     description: Optional[str] = None
     ticket_type: Optional[TicketType] = None
     priority: Optional[TicketPriority] = None
@@ -80,8 +80,8 @@ class TicketResponse(TicketBase):
 
 
 class CustomerBase(BaseModel):
-    first_name: str
-    last_name: str
+    first_name: str = Field(..., min_length=1, description="Name Cannot be empty")
+    last_name: str = Field(..., min_length=1, description="Name Cannot be empty")
     company: str
     email: EmailStr
     phone: Optional[str] = None
@@ -92,8 +92,8 @@ class CustomerCreate(CustomerBase):
 
 
 class CustomerUpdate(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    first_name: Optional[str] = Field(None, min_length=1, description="Name Cannot be empty")
+    last_name: Optional[str] = Field(None, min_length=1, description="Name Cannot be empty")
     company: Optional[str] = None
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
@@ -117,8 +117,8 @@ class CustomerResponse(CustomerBase):
 
 
 class EmployeeBase(BaseModel):
-    first_name: str
-    last_name: str
+    first_name: str = Field(..., min_length=1, description="Name Cannot be empty")
+    last_name: str = Field(..., min_length=1, description="Name Cannot be empty")
     email: EmailStr
     phone: str
     access_level: AccessLevel = AccessLevel.AGENT
@@ -129,8 +129,8 @@ class EmployeeCreate(EmployeeBase):
 
 
 class EmployeeUpdate(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    first_name: Optional[str] = Field(None, min_length=1, description="Name Cannot be empty")
+    last_name: Optional[str] = Field(None, min_length=1, description="Name Cannot be empty")
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     access_level: Optional[AccessLevel] = None
@@ -142,7 +142,7 @@ class EmployeeResponse(EmployeeBase):
     last_name: str
     email: EmailStr
     access_level: AccessLevel
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -150,21 +150,53 @@ class EmployeeResponse(EmployeeBase):
         Corresponding to SQAlchemy Class Note
 """
 
+
 class NoteBase(BaseModel):
     content: str
+
 
 class NoteCreate(NoteBase):
     pass
 
+
 class NoteUpdate(NoteBase):
     pass
+
 
 class NoteResponse(NoteBase):
     note_id: int
     ticket_id: int
     author_id: int
-    content: str
+    content: str = Field(..., min_length=1, description="Note Cannot be empty")
     created_at: datetime
 
     author_name: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
+
+
+"""     Pydantic Classes for validation of Database Table : notes
+        Corresponding to SQAlchemy Class Note
+"""
+
+
+class SenderType(str, Enum):
+    USER = "user"
+    AI = "ai"
+
+
+class ChatSessionResponse(BaseModel):
+    chat_id: int
+    chat_title: str
+    init_time: datetime
+
+
+class ChatMessageCreate(BaseModel):
+    sender_type: SenderType
+    chat_id: int
+    chat_text: str
+
+
+class ChatMessageResponse(BaseModel):
+    chat_text: str
+    sender_type: SenderType
+    created_at: datetime

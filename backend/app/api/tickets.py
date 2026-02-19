@@ -1,7 +1,7 @@
 import json
 from fastapi import APIRouter, HTTPException, status
 from fastapi.encoders import jsonable_encoder
-from typing import List
+from typing import List, Optional
 
 from app.core.session import DBdependency, RedisDependency
 from app.core.auth import AgentDependency, AdminDependency
@@ -12,20 +12,52 @@ router = APIRouter()
 
 
 @router.get("/", response_model=List[TicketResponse])
-async def get_all_tickets(db: DBdependency, user: AgentDependency, redis_client: RedisDependency):
+async def get_all_tickets(db: DBdependency, user: AgentDependency, redis_client: RedisDependency,
+                          skip: int = 0, limit: Optional[int] = None):
     try:
         cache_key = "tickets:all"
         cached_data = await redis_client.get(cache_key)
         if cached_data:
             return json.loads(cached_data)
-
-        tickets = db.query(Ticket).all()
-        data = jsonable_encoder(tickets)
-        await redis_client.set(cache_key, json.dumps(data), ex=60)
+        if not limit:
+            tickets = db.query(Ticket).all()
+            data = jsonable_encoder(tickets)
+            await redis_client.set(cache_key, json.dumps(data), ex=60)
+        else:
+            tickets = db.query(Ticket).offset(skip).limit(limit).all()
         return tickets
     except Exception as e:
         print("Cache Error :- ", e)
-        return db.query(Ticket).all()
+        if not limit:
+            return db.query(Ticket).all()
+        return db.query(Ticket).offset(skip).limit(limit).all()
+
+
+@router.get("/search")
+async def search_ticket(db: DBdependency, user: AgentDependency,
+                        customer_id: Optional[int] = None, employee_id: Optional[int] = None):
+    print("employee_id received:", employee_id)
+    if employee_id:
+        tickets = db.query(Ticket).filter(Ticket.assignee_id == employee_id).all()
+        if not tickets:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tickets for employee {employee_id} not found."
+            )
+        return tickets
+    if customer_id:
+        tickets = db.query(Ticket).filter(Ticket.customer_id == customer_id).all()
+        if not tickets:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tickets for customers {customer_id} not found."
+            )
+        return tickets
+
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Mention at least 1 filter to search with"
+    )
 
 
 @router.get("/{ticket_id}", response_model=TicketResponse)
@@ -45,7 +77,7 @@ async def create_ticket(ticket_in: TicketCreate, db: DBdependency, user: AgentDe
     try:
         new_ticket = Ticket(**ticket_in.model_dump())
         setattr(new_ticket, "created_by_id", user.employee_id)
-        if getattr(new_ticket,"assignee_id") == 0:
+        if getattr(new_ticket, "assignee_id") == 0:
             setattr(new_ticket, "assignee_id", None)
         db.add(new_ticket)
         db.commit()
@@ -73,6 +105,12 @@ async def update_ticket(ticket_id: int, ticket_in: TicketUpdate, db: DBdependenc
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Ticket with ID: {ticket_id} not found."
         )
+    if user.access_level != "admin" and ticket.assignee_id != user.employee_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"You do not have the authority to update this ticket."
+        )
+
     data = ticket_in.model_dump(exclude_unset=True)
     for key, value in data.items():
         setattr(ticket, key, value)
@@ -113,3 +151,5 @@ async def delete_ticket(ticket_id, db: DBdependency, user: AdminDependency, redi
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database Error! Ticket cannot be deleted right now."
         )
+
+

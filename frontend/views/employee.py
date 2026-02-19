@@ -33,32 +33,38 @@ if st.session_state.employee_page == "employee_full_view":
         df = pd.DataFrame(response.json())
     else:
         st.warning(body="Connection Error")
+        df = pd.DataFrame()
 
-    df["name"] = df["first_name"] + " " + df["last_name"]
-    display_df = df[["employee_id","name","email","access_level"]].rename(columns={
-        "employee_id" : "ID",
-        "name" : "Employee Name",
-        "email" : "Email ID",
-        "access_level" : "Role",
-    }).copy()
+    if not df.empty:
+        df = df.fillna("")
 
-    employees_df = st.dataframe(
-        display_df,
-        on_select="rerun",
-        selection_mode="single-row",
-        width='stretch',
-        hide_index=True,
-        column_config={
-            "ID" : st.column_config.TextColumn(width="small"),
-            "email" : st.column_config.TextColumn(width="medium")
-        }
-    )
+        df["name"] = df["first_name"] + " " + df["last_name"]
+        display_df = df[["employee_id","name","email","access_level"]].rename(columns={
+            "employee_id" : "ID",
+            "name" : "Employee Name",
+            "email" : "Email ID",
+            "access_level" : "Role",
+        }).copy()
 
-    if len(employees_df.selection.rows) > 0:
-        index = employees_df.selection.rows[0]
-        st.session_state.selected_employee = df.iloc[index].to_dict()
-        st.session_state.employee_page = "employee_one_view"
-        st.rerun()
+        employees_df = st.dataframe(
+            display_df,
+            on_select="rerun",
+            selection_mode="single-row",
+            width='stretch',
+            hide_index=True,
+            column_config={
+                "ID" : st.column_config.TextColumn(width="small"),
+                "email" : st.column_config.TextColumn(width="medium")
+            }
+        )
+
+        if len(employees_df.selection.rows) > 0:
+            index = employees_df.selection.rows[0]
+            st.session_state.selected_employee = df.iloc[index].to_dict()
+            st.session_state.employee_page = "employee_one_view"
+            st.rerun()
+    else:
+        st.info("No employees found.")
 
 
 # SINGLE EMPLOYEE VIEW WITH UPDATE AND DELETE BUTTON
@@ -74,7 +80,7 @@ if st.session_state.employee_page == "employee_one_view":
             st.rerun()
     
     with cb3:
-        if st.button(label="Update"):
+        if st.button(label="Update", type="primary"):
             st.session_state.employee_page = "employee_update_view"
             st.rerun()
 
@@ -84,9 +90,9 @@ if st.session_state.employee_page == "employee_one_view":
         ce1 , ce2 = st.columns([1,1])
         with ce1:
             st.markdown(f"**Employee Name**")
-            st.code(" ".join([cur_emp["first_name"],cur_emp["last_name"]]))
+            st.code(f"{cur_emp['first_name']} {cur_emp['last_name']}")
             st.markdown(f"**Access level**")
-            st.code(cur_emp["access_level"].upper())
+            st.code(str(cur_emp["access_level"]).upper())
         with ce2:
             st.markdown(f"**Email**")
             st.code(cur_emp["email"])
@@ -112,10 +118,11 @@ if st.session_state.employee_page == "employee_update_view":
                 st.rerun()
 
     employee = st.session_state.selected_employee or {}
+    
     form_values = {
         "first_name": employee.get("first_name", ""),
         "last_name": employee.get("last_name", ""),
-        "access_level": employee.get("access_level", ""),
+        "access_level": employee.get("access_level", "agent"),
         "email": employee.get("email", ""),
         "phone": employee.get("phone", ""),
         "index" : 0 if employee.get("access_level") == "admin" else 1
@@ -147,20 +154,43 @@ if st.session_state.employee_page == "employee_update_view":
                 "phone": phone
             }
 
-            if st.session_state.selected_employee:
-                requests.put(
-                    f"http://127.0.0.1:8000/employees/{employee.get('employee_id')}/",
-                    json=new_employee_data,
-                    headers=headers
-                )
-            else:
-                new_employee_data["password_hash"] = password
-                requests.post(
-                    "http://127.0.0.1:8000/employees/",
-                    json=new_employee_data,
-                    headers=headers
-                )
+            try:
+                if st.session_state.selected_employee:
+                    res = requests.put(
+                        f"http://127.0.0.1:8000/employees/{employee.get('employee_id')}/",
+                        json=new_employee_data,
+                        headers=headers
+                    )
+                else:
+                    new_employee_data["password_hash"] = password
+                    res = requests.post(
+                        "http://127.0.0.1:8000/employees/",
+                        json=new_employee_data,
+                        headers=headers
+                    )
 
-            st.session_state.employee_page = "employee_full_view"
-            st.session_state.selected_employee = None
-            st.rerun()
+                if res.status_code in [200, 201]:
+                    st.success("Employee saved successfully!")
+                    st.session_state.employee_page = "employee_full_view"
+                    st.session_state.selected_employee = None
+                    st.rerun()
+
+                elif res.status_code == 422:
+                    error_data = res.json().get("detail", [])
+                    if isinstance(error_data, list):
+                        for err in error_data:
+                            field = err["loc"][-1]
+                            msg = err["msg"]
+                            st.error(f"❌ {field.title()}: {msg}")
+                            break
+                    else:
+                        st.error(f"❌ {error_data}")
+                    st.stop()
+                
+                else:
+                    st.error(f"❌ Error {res.status_code}: {res.text}")
+                    st.stop()
+
+            except Exception as e:
+                st.error(f"❌ Connection Error: {e}")
+                st.stop()

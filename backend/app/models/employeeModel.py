@@ -20,3 +20,4 @@ class Employee(Base):
     tickets_assigned = relationship("Ticket", back_populates="assignee", foreign_keys="Ticket.assignee_id")
     tickets_created = relationship("Ticket", back_populates="creator", foreign_keys="Ticket.created_by_id")
     notes_created = relationship("Note",back_populates="author")
+    chat_sessions = relationship("ChatSession", back_populates="owner")
